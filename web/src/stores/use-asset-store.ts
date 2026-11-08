@@ -32,6 +32,7 @@ type AssetStore = {
     updateAsset: (id: string, patch: Partial<Omit<Asset, "id" | "createdAt">>) => void;
     removeAsset: (id: string) => void;
     replaceAssets: (assets: Asset[]) => void;
+    syncSystemAssets: () => Promise<number>;
     cleanupImages: (extra?: unknown) => void;
 };
 
@@ -94,6 +95,24 @@ export const useAssetStore = create<AssetStore>()(
                     return { assets };
                 }),
             replaceAssets: (assets) => set({ assets }),
+            syncSystemAssets: async () => {
+                try {
+                    const res = await fetch("/api/assets");
+                    if (!res.ok) return 0;
+                    const data = await res.json();
+                    const sysAssets: Asset[] = (data.assets || []) as Asset[];
+                    if (!sysAssets.length) return 0;
+                    const existing = get().assets;
+                    const sysIds = new Set(sysAssets.map((a) => a.id));
+                    const userCustom = existing.filter((a) => !sysIds.has(a.id));
+                    const merged = [...sysAssets, ...userCustom];
+                    set({ assets: merged });
+                    return sysAssets.length;
+                } catch (e) {
+                    console.error("Failed to sync system assets:", e);
+                    return 0;
+                }
+            },
             cleanupImages: (extra) => {
                 window.setTimeout(async () => {
                     const { useCanvasStore } = await import("@/stores/canvas/use-canvas-store");
@@ -108,6 +127,10 @@ export const useAssetStore = create<AssetStore>()(
             partialize: (state) => ({ assets: state.assets }) as StorageValue<AssetStore>["state"],
             onRehydrateStorage: () => () => {
                 useAssetStore.setState({ hydrated: true });
+                // 自动同步：页面水合完成后，无条件静默拉取系统最新全链路资产库（覆盖过期版本，保留用户自定义资产）
+                window.setTimeout(() => {
+                    void useAssetStore.getState().syncSystemAssets();
+                }, 50);
             },
         },
     ),

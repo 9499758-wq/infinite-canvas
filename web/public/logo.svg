@@ -1,4 +1,21 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M32 8L58 54H46L32 29L18 54H6L32 8Z" fill="currentColor"/>
-  <path d="M32 40L40 54H24L32 40Z" fill="currentColor"/>
+  <defs>
+    <linearGradient id="dreamGradient" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="45%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="petalGradient" x1="16" y1="12" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+  <!-- 梦境鲜花·灵感图腾 外层柔美绽放花瓣 -->
+  <path d="M32 6C34.5 16 43 20 50 18C44 26 43 35 49 42C40 40 33 46 32 58C31 46 24 40 15 42C21 35 20 26 14 18C21 20 29.5 16 32 6Z" fill="url(#dreamGradient)" opacity="0.95"/>
+  <!-- 梦境之花·内层微光舒展花蕊 -->
+  <path d="M32 16C33.8 23 38.5 26 43 25C39 31 38.5 37 42.5 41C36.5 40 32.5 44 32 50C31.5 44 27.5 40 21.5 41C25.5 37 25 31 21 25C25.5 26 30.2 23 32 16Z" fill="url(#petalGradient)"/>
+  <!-- 核心 AI 灵感星芒 -->
+  <path d="M32 24L34.2 29.8L40 32L34.2 34.2L32 40L29.8 34.2L24 32L29.8 29.8L32 24Z" fill="#ffffff"/>
+  <!-- 环绕灵感微粒子 -->
+  <circle cx="32" cy="32" r="2.5" fill="#ecfdf5"/>
 </svg>

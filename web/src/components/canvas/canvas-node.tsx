@@ -14,6 +14,7 @@ import { CanvasNodeType, type CanvasNodeData, type CanvasNodeImage, type CanvasN
 import type { CanvasNodeContext, CanvasPluginHost } from "@/types/canvas-plugin";
 import type { CanvasResourceReference } from "@/lib/canvas/canvas-resource-references";
 import { useTranslation } from "react-i18next";
+import { MergeNodeContent } from "./nodes/merge-node";
 
 type ResizeCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 const selectionBlue = "#2f80ff";
@@ -295,6 +296,9 @@ export const CanvasNode = React.memo(function CanvasNode({
         };
     }, [handleResizeMove, handleResizeUp]);
 
+    const isNodeRunning = Boolean(data.metadata?.running || (data.metadata as any)?.isExecuting);
+    const isComfyNode = Boolean(data.metadata?.comfyId || data.title?.includes("🧩") || data.title?.includes("ComfyUI"));
+
     return (
         <div
             data-node-id={data.id}
@@ -322,8 +326,21 @@ export const CanvasNode = React.memo(function CanvasNode({
                 else onContextMenu(event, data.id);
             }}
         >
+            {/* 节点运行状态动态角标 */}
+            {isNodeRunning && (
+                <div className="absolute right-3 top-[-26px] z-[65] flex items-center gap-1.5 rounded-full bg-emerald-500 text-white px-2.5 py-0.5 text-[10px] font-bold shadow-lg shadow-emerald-500/30 backdrop-blur-md animate-pulse">
+                    <span className="size-1.5 rounded-full bg-white animate-ping" />
+                    <span>⚡ 生成中: {data.metadata?.progress || 72}%</span>
+                </div>
+            )}
+
             {!referenceSelectionState && (isSelected || hovered || isEditingTitle) && (
-                <div className="absolute left-3 top-[-28px] z-[65] max-w-[calc(100%-24px)]" onMouseDown={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
+                <div className="absolute left-3 top-[-28px] z-[65] max-w-[calc(100%-24px)] flex items-center gap-1.5" onMouseDown={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
+                    {isComfyNode && (
+                        <span className="rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 py-0.2 text-[9px] font-bold">
+                            ComfyUI
+                        </span>
+                    )}
                     {isEditingTitle ? (
                         <input
                             ref={titleInputRef}
@@ -359,12 +376,12 @@ export const CanvasNode = React.memo(function CanvasNode({
             )}
 
             <div
-                className="relative h-full w-full overflow-visible rounded-3xl border-2"
+                className={`relative h-full w-full overflow-visible rounded-3xl border-2 ${isNodeRunning ? "liblib-running-node" : ""}`}
                 style={{
                     background: isGroup ? "transparent" : hasImageContent || hasVideoContent || transparentBg ? "transparent" : theme.node.fill,
-                    borderColor: isGroup ? (isGroupDropTarget || isActive ? selectionBlue : theme.node.stroke) : hasImageContent ? imageBorderColor : isActive ? selectionBlue : isRelated ? theme.node.muted : transparentBg ? "transparent" : theme.node.stroke,
+                    borderColor: isNodeRunning ? "#10b981" : isGroup ? (isGroupDropTarget || isActive ? selectionBlue : theme.node.stroke) : hasImageContent ? imageBorderColor : isActive ? selectionBlue : isRelated ? theme.node.muted : transparentBg ? "transparent" : theme.node.stroke,
                     borderStyle: isGroup ? "dashed" : "solid",
-                    boxShadow: isGroupDropTarget ? `0 0 0 2px ${selectionBlue}66, inset 0 0 0 999px ${selectionBlue}10` : isActive ? `0 0 0 1px ${selectionBlue}55` : isRelated ? `0 0 0 1px ${theme.node.muted}55, 0 18px 48px rgba(0,0,0,.14)` : undefined,
+                    boxShadow: isNodeRunning ? "0 0 25px rgba(16, 185, 129, 0.4)" : isGroupDropTarget ? `0 0 0 2px ${selectionBlue}66, inset 0 0 0 999px ${selectionBlue}10` : isActive ? `0 0 0 1px ${selectionBlue}55` : isRelated ? `0 0 0 1px ${theme.node.muted}55, 0 18px 48px rgba(0,0,0,.14)` : undefined,
                 }}
                 onMouseDown={(event) => {
                     if (!referenceSelectionState) onMouseDown(event, data.id);
@@ -482,6 +499,7 @@ const nodeContentRenderers = {
     [CanvasNodeType.Video]: VideoNodeContent,
     [CanvasNodeType.Audio]: AudioNodeContent,
     [CanvasNodeType.Group]: GroupNodeContent,
+    [CanvasNodeType.Merge]: (props) => (props.pluginContext ? <MergeNodeContent ctx={props.pluginContext} /> : null),
 } satisfies Record<CanvasNodeType, (props: NodeContentRendererProps) => ReactNode>;
 
 function GroupNodeContent({ node, theme, groupChildCount }: NodeContentRendererProps) {

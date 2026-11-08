@@ -117,7 +117,10 @@ export async function ensurePluginsLoaded() {
 async function loadLocalPlugins() {
     let urls: unknown;
     try {
-        const response = await fetch("/plugins/index.json");
+        // ★ 不能写死 "/plugins/index.json"：这套应用挂在 /canvas 子树下，
+        //   写死就变成去工作台的根路径拿一份 404（那边是五阶段工作台的静态目录）。
+        //   用 BASE_URL 才能跟着 vite 的 base 走。
+        const response = await fetch(`${import.meta.env.BASE_URL}plugins/index.json`);
         if (!response.ok) return;
         urls = await response.json();
     } catch {

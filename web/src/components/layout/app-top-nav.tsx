@@ -11,6 +11,31 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { useAgentStore } from "@/stores/use-agent-store";
 
+export function DreamLogo({ className = "size-6" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+            <defs>
+                <linearGradient id="dreamGradNav" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#00f0ff" />
+                    <stop offset="45%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+                <linearGradient id="dreamCoreNav" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#34d399" />
+                </linearGradient>
+                <filter id="dreamGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#10b981" floodOpacity="0.4" />
+                </filter>
+            </defs>
+            <path d="M32 4C35 15 45 19 53 17C47 26 46 36 52 44C42 42 35 48 32 60C29 48 22 42 12 44C18 36 17 26 11 17C19 19 29 15 32 4Z" fill="url(#dreamGradNav)" opacity="0.95" filter="url(#dreamGlow)" />
+            <path d="M32 15C34 22 39 25 44 24C40 30 39 36 43 40C37 39 33 43 32 49C31 43 27 39 21 40C25 36 24 30 20 24C25 25 30 22 32 15Z" fill="url(#dreamCoreNav)" />
+            <path d="M32 23L34.5 29.5L41 32L34.5 34.5L32 41L29.5 34.5L23 32L29.5 29.5L32 23Z" fill="#ffffff" />
+            <circle cx="32" cy="32" r="2.5" fill="#f0fdf4" />
+        </svg>
+    );
+}
+
 export function AppTopNav() {
     const { t } = useTranslation();
     const { pathname } = useLocation();
@@ -38,15 +63,11 @@ export function AppTopNav() {
                 <header className="sticky top-0 z-20 h-14 shrink-0 border-b border-stone-200 bg-background/90 backdrop-blur-xl dark:border-stone-800">
                     <div className="mx-auto flex h-full max-w-7xl items-stretch justify-between gap-5 px-6">
                         <div className="flex min-w-0 items-center">
-                            <Link to="/" className="flex h-full shrink-0 items-center gap-2 text-sm font-semibold leading-none tracking-tight text-stone-950 transition hover:text-stone-600 dark:text-stone-100 dark:hover:text-stone-300">
-                                <span
-                                    className="size-5 shrink-0 bg-current"
-                                    style={{
-                                        mask: "url(/logo.svg) center / contain no-repeat",
-                                        WebkitMask: "url(/logo.svg) center / contain no-repeat",
-                                    }}
-                                />
-                                <span className="text-base font-medium">{t("meta.title")}</span>
+                            <Link to="/" className="group flex h-full shrink-0 items-center gap-2.5 text-sm font-semibold leading-none tracking-tight transition">
+                                <DreamLogo className="size-6.5 shrink-0 drop-shadow-md transition-transform duration-300 group-hover:scale-110" />
+                                <span className="text-base font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400">
+                                    {t("meta.title")}
+                                </span>
                             </Link>
 
                             <button

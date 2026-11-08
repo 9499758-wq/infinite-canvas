@@ -1,5 +1,5 @@
 import { Copy, FileText } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { Button, Card, Tag } from "antd";
 import { useTranslation } from "react-i18next";
 
@@ -25,6 +25,18 @@ export function PromptCard({
     compact?: boolean;
 }) {
     const { i18n, t } = useTranslation();
+
+    // ★ 封面图加载失败要退回占位，别让破图占着位置。
+    //
+    //   为什么一定会失败：这 1742 条提示词的 coverUrl 是上游各自存的第三方图，
+    //   实测有相当一部分存在 pbs.twimg.com / linux.do / cdn.jsdelivr.net 上 ——
+    //   国内网络下分别是 ERR_CONNECTION_RESET 和 ERR_BLOCKED_BY_ORB，
+    //   浏览器会在卡片左上角画一个裂开的图标。一张裂图不算大问题，
+    //   ​但一屏 20 张里有三四张裂的就显得整个页面是坏的。
+    //   所以：加载失败就把 coverUrl 记下来，之后的渲染直接走占位。
+    const [broken, setBroken] = useState(false);
+    const showCover = Boolean(item.coverUrl) && !broken;
+
     return (
         <Card
             hoverable
@@ -32,7 +44,7 @@ export function PromptCard({
             styles={{ body: compact ? { padding: 0 } : { display: "flex", flex: 1, flexDirection: "column", padding: 0 } }}
             cover={
                 <button type="button" className="block w-full cursor-pointer text-left" onClick={onOpen}>
-                    {item.coverUrl ? <img src={item.coverUrl} alt={item.title} className={compact ? "aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" : "aspect-[4/3] w-full object-cover"} loading="lazy" /> : <span className={compact ? "grid aspect-square w-full place-items-center bg-stone-100 text-stone-400 dark:bg-stone-900 dark:text-stone-600" : "grid aspect-[4/3] w-full place-items-center bg-stone-100 text-stone-400 dark:bg-stone-900 dark:text-stone-600"}><FileText className="size-8" /></span>}
+                    {showCover ? <img src={item.coverUrl} alt={item.title} className={compact ? "aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" : "aspect-[4/3] w-full object-cover"} loading="lazy" onError={() => setBroken(true)} /> : <span className={compact ? "grid aspect-square w-full place-items-center bg-stone-100 text-stone-400 dark:bg-stone-900 dark:text-stone-600" : "grid aspect-[4/3] w-full place-items-center bg-stone-100 text-stone-400 dark:bg-stone-900 dark:text-stone-600"}><FileText className="size-8" /></span>}
                 </button>
             }
         >

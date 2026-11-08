@@ -15,3 +15,5 @@ web/public/plugins
 plugins/canvas/*/dist
 plugins/canvas/*/node_modules
 web/public/plugins
+# 本地演示用的原片（54MB，代码里走 /api/media 后端路径，不从这里加载）
+web/public/media

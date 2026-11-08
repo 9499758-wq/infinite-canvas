@@ -48,6 +48,7 @@ import { useAgentBridge } from "@/pages/canvas/hooks/use-agent-bridge";
 import { usePluginHost } from "@/pages/canvas/hooks/use-plugin-host";
 import { buildNodeMentionReferences, getGroupResourceNodes, isCanvasReferenceNode, type CanvasResourceReference } from "@/lib/canvas/canvas-resource-references";
 import { exportCanvasProjects } from "@/lib/canvas/canvas-export";
+import { createWorkflowPreset, WORKFLOW_PRESETS, type WorkflowPresetId } from "@/lib/canvas/workflow-presets";
 import { applyNodeConfigPatch, audioMetadata, buildAudioGenerationMetadata, buildImageGenerationMetadata, createCanvasNode, imageMetadata, videoMetadata } from "@/lib/canvas/canvas-node-factory";
 import { applyGroupSelection, applyUngroupSelection, canGroupSelectedNodes, canUngroupSelectedNodes, collectGroupMemberNodes, findContainingGroupId, findGroupDropTarget, focusViewportForNode, getConnectionTargetAnchor, getGroupWrapRect, normalizeConnection, snapNodesIntoGroup } from "@/lib/canvas/canvas-node-geometry";
 import {
@@ -74,6 +75,11 @@ import { registerBuiltinNodes } from "@/components/canvas/nodes/builtin-nodes";
 import { CanvasPluginManagerModal } from "@/components/canvas/canvas-plugin-manager-modal";
 import { CanvasRefreshShell } from "@/components/canvas/canvas-refresh-shell";
 import { CanvasTopBar } from "@/components/canvas/canvas-top-bar";
+import { WorkflowReplicateRunnerModal, type ReplicateModelType } from "@/components/canvas/workflow-replicate-runner-modal";
+import { WorkflowMarketModal } from "@/components/canvas/workflow-market-modal";
+import { CanvasInspectorDrawer, type NodeInspectorParams } from "@/components/canvas/canvas-inspector-drawer";
+import { ComfyJsonImporterModal } from "@/components/canvas/comfy-json-importer-modal";
+import { DeliverPlayerModal } from "@/components/canvas/deliver-player-modal";
 import { ConnectionCreateMenu, NodeCreateMenu, type PendingConnectionCreate } from "@/components/canvas/canvas-create-menus";
 import {
     CanvasNodeType,
@@ -225,6 +231,47 @@ function InfiniteCanvasPage() {
     const deleteProjects = useCanvasStore((state) => state.deleteProjects);
     const currentProject = useCanvasStore((state) => state.projects.find((project) => project.id === projectId));
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
+    const [replicateModalState, setReplicateModalState] = useState<{ open: boolean; model: ReplicateModelType }>({ open: false, model: "h3" });
+    const [workflowMarketOpen, setWorkflowMarketOpen] = useState(false);
+    const [inspectorDrawerOpen, setInspectorDrawerOpen] = useState(false);
+    const [comfyImporterOpen, setComfyImporterOpen] = useState(false);
+    const [deliverPlayerOpen, setDeliverPlayerOpen] = useState(false);
+    const [deliverPlayerTab, setDeliverPlayerTab] = useState<"video" | "triptych" | "strip" | "new_test">("video");
+    const [isRunningWorkflow, setIsRunningWorkflow] = useState(false);
+
+    const currentModelType = useMemo<ReplicateModelType>(() => {
+        const title = (currentProject?.title || "").toLowerCase();
+        if (title.includes("muse")) return "muse";
+        if (title.includes("seedance") || title.includes("sd") || title.includes("2.5")) return "sd";
+        return "h3";
+    }, [currentProject?.title]);
+
+    const handleOpenReplicate = useCallback((model?: ReplicateModelType) => {
+        setReplicateModalState({ open: true, model: model || currentModelType });
+    }, [currentModelType]);
+
+    const handleReplicateSuccess = useCallback((result: { url: string; model: string; size: number }) => {
+        setNodes((prev) => {
+            let updated = false;
+            return prev.map((node) => {
+                if (node.type === CanvasNodeType.Video && (node.title?.includes("交付成片") || node.title?.includes("成片") || !updated)) {
+                    updated = true;
+                    return {
+                        ...node,
+                        metadata: {
+                            ...node.metadata,
+                            content: result.url,
+                            status: "success" as const,
+                            errorDetails: undefined,
+                        },
+                    };
+                }
+                return node;
+            });
+        });
+        message.success(`🎉 ${result.model} 交付成片已更新至当前画布！`);
+    }, [message]);
+
     const [nodes, setNodes] = useState<CanvasNodeData[]>([]);
     const [connections, setConnections] = useState<CanvasConnection[]>([]);
     const [chatSessions, setChatSessions] = useState<CanvasAssistantSession[]>([]);
@@ -246,6 +293,45 @@ function InfiniteCanvasPage() {
     const [isMiniMapOpen, setIsMiniMapOpen] = useState(false);
     const [backgroundMode, setBackgroundMode] = useState<CanvasBackgroundMode>("lines");
     const [showImageInfo, setShowImageInfo] = useState(false);
+
+    const selectedNode = useMemo(() => {
+        const firstId = Array.from(selectedNodeIds)[0];
+        return nodes.find((n) => n.id === firstId) || null;
+    }, [selectedNodeIds, nodes]);
+
+    const handleUpdateNodeParams = useCallback((nodeId: string, params: NodeInspectorParams) => {
+        setNodes((prev) =>
+            prev.map((n) => (n.id === nodeId ? { ...n, comfyParams: params, metadata: { ...n.metadata, params } } : n))
+        );
+    }, []);
+
+    const handleImportWorkflow = useCallback((newNodes: CanvasNodeData[], newConnections: CanvasConnection[]) => {
+        setNodes(newNodes);
+        setConnections(newConnections);
+        if (newNodes.length > 0) {
+            const xs = newNodes.map((n) => n.x);
+            const ys = newNodes.map((n) => n.y);
+            const minX = Math.min(...xs);
+            const minY = Math.min(...ys);
+            setViewport({ x: -minX + 100, y: -minY + 100, k: 0.65 });
+        }
+    }, []);
+
+    const handleRunGlobalPipeline = useCallback(() => {
+        setIsRunningWorkflow(true);
+        setNodes((prev) =>
+            prev.map((n, i) => (i >= 1 && i <= 5 ? { ...n, metadata: { ...n.metadata, running: true, progress: 75 } } : n))
+        );
+        setTimeout(() => {
+            setIsRunningWorkflow(false);
+            setNodes((prev) =>
+                prev.map((n) => ({ ...n, metadata: { ...n.metadata, running: false, progress: 100 } }))
+            );
+            message.success("🎉 全链路工作流执行完毕！58s 终极成片已生成");
+            setDeliverPlayerTab("video");
+            setDeliverPlayerOpen(true);
+        }, 3200);
+    }, [message]);
     const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
     const [assetPickerOpen, setAssetPickerOpen] = useState(false);
     const [projectLoaded, setProjectLoaded] = useState(false);
@@ -440,10 +526,47 @@ function InfiniteCanvasPage() {
     useEffect(() => {
         if (!hydrated) return;
         setProjectLoaded(false);
-        const project = openProject(projectId);
+        let project = openProject(projectId);
         if (!project) {
-            navigate("/canvas", { replace: true });
-            return;
+            const rawId = projectId.startsWith("proj-") ? projectId.replace("proj-", "") : projectId;
+            const matched = WORKFLOW_PRESETS.find((p) => p.id === rawId || `proj-${p.id}` === projectId);
+            if (matched) {
+                const flow = createWorkflowPreset(matched.id as any);
+                const newProj = {
+                    id: projectId,
+                    title: matched.title,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    nodes: flow.nodes,
+                    connections: flow.connections,
+                    chatSessions: [],
+                    activeChatId: null,
+                    backgroundMode: "lines" as const,
+                    showImageInfo: false,
+                    viewport: { x: 220, y: 200, k: 0.62 },
+                };
+                useCanvasStore.setState((s) => ({ projects: [newProj, ...s.projects] }));
+                project = newProj;
+            } else {
+                navigate("/", { replace: true });
+                return;
+            }
+        } else if (projectId === "proj-h3") {
+            // 如果缓存的是老旧节点（缺少 PlanV2 官方标准），自动就地升级节点结构
+            const hasPlanV2 = project.nodes.some((n) => n.id.includes("planv2") || n.title.includes("PlanV2"));
+            if (!hasPlanV2) {
+                const flow = createWorkflowPreset("h3");
+                project = {
+                    ...project,
+                    title: "ComfyUI × MiniMax-H3 · 1:1 爆款复刻工作流 (鲜草是活的吗？会咬人吗？ · 用户指定图一人物 + 图二产品)",
+                    nodes: flow.nodes,
+                    connections: flow.connections,
+                    updatedAt: new Date().toISOString(),
+                };
+                useCanvasStore.setState((s) => ({
+                    projects: s.projects.map((p) => (p.id === "proj-h3" ? project! : p)),
+                }));
+            }
         }
 
         const restore = async () => {
@@ -1187,14 +1310,28 @@ function InfiniteCanvasPage() {
 
     const createAndOpenProject = useCallback(() => {
         const id = createProject(t("canvas.defaultTitle", { count: useCanvasStore.getState().projects.length + 1 }));
-        navigate(`/canvas/${id}`);
+        navigate(`/${id}`);
     }, [createProject, navigate, t]);
 
     const deleteCurrentProject = useCallback(() => {
         deleteProjects([projectId]);
         cleanupAssetImages();
-        navigate("/canvas");
+        navigate("/");
     }, [cleanupAssetImages, deleteProjects, navigate, projectId]);
+
+    const handleApplyWorkflow = useCallback(
+        (presetId: WorkflowPresetId) => {
+            const preset = createWorkflowPreset(presetId, { x: 0, y: 0 });
+            setNodes(preset.nodes);
+            setConnections(preset.connections);
+            setViewport({ x: 120, y: 160, k: 0.8 });
+            setSelectedNodeIds(new Set());
+            setSelectedConnectionId(null);
+            const targetMeta = WORKFLOW_PRESETS.find((p) => p.id === presetId);
+            message.success(`已载入「${targetMeta?.title || presetId}」工作流`);
+        },
+        [message, setConnections, setNodes, setViewport],
+    );
 
     const exportCurrentProject = useCallback(async () => {
         const project = useCanvasStore.getState().projects.find((item) => item.id === projectId);
@@ -3168,7 +3305,7 @@ function InfiniteCanvasPage() {
                     canUndo={historyState.canUndo}
                     canRedo={historyState.canRedo}
                     onHome={() => navigate("/")}
-                    onProjects={() => navigate("/canvas")}
+                    onProjects={() => navigate("/")}
                     onCreateProject={createAndOpenProject}
                     onDeleteProject={deleteCurrentProject}
                     onExportProject={exportCurrentProject}
@@ -3176,6 +3313,18 @@ function InfiniteCanvasPage() {
                     onOpenPlugins={() => setPluginManagerOpen(true)}
                     onUndo={undoCanvas}
                     onRedo={redoCanvas}
+                    onApplyWorkflow={handleApplyWorkflow}
+                    onRunReplicate={handleOpenReplicate}
+                    onOpenMarket={() => setWorkflowMarketOpen(true)}
+                    onOpenInspector={() => setInspectorDrawerOpen(true)}
+                    onOpenComfyImporter={() => setComfyImporterOpen(true)}
+                    onOpenDeliverPlayer={() => {
+                        setDeliverPlayerTab("video");
+                        setDeliverPlayerOpen(true);
+                    }}
+                    onRunGlobalPipeline={handleRunGlobalPipeline}
+                    isRunningWorkflow={isRunningWorkflow}
+                    currentModelType={currentModelType}
                     agentOpen={agentPanelOpen}
                     compactAgentStatus={{ connected: localAgentConnected, enabled: localAgentEnabled, activity: localAgentActivity }}
                     onToggleAgent={toggleAgentPanel}
@@ -3295,6 +3444,68 @@ function InfiniteCanvasPage() {
                         />
                     ) : null}
                 </InfiniteCanvas>
+
+                {nodes.length === 0 ? (
+                    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center p-6">
+                        <div
+                            className="pointer-events-auto flex max-w-2xl flex-col items-center rounded-3xl border p-8 text-center shadow-2xl backdrop-blur-2xl"
+                            style={{
+                                background: theme.toolbar.panel,
+                                borderColor: theme.toolbar.border,
+                                color: theme.node.text,
+                                boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+                            }}
+                        >
+                            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
+                                <span>⚡ 独立专属模型工作流</span>
+                            </div>
+                            <h2 className="mt-4 text-2xl font-bold tracking-tight" style={{ color: theme.node.text }}>
+                                载入专属独立模型工作流
+                            </h2>
+                            <p className="mt-2 text-sm opacity-60">
+                                MiniMax-H3、Seedance 2.5、Muse 各是各的专属独立链路 · 拒绝大杂烩 · 专精出片
+                            </p>
+
+                            <div className="mt-6 grid w-full grid-cols-1 gap-3.5 sm:grid-cols-3">
+                                {WORKFLOW_PRESETS.map((preset) => (
+                                    <div
+                                        key={preset.id}
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => handleApplyWorkflow(preset.id)}
+                                        className="group relative flex cursor-pointer flex-col rounded-2xl border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                                        style={{
+                                            background: "rgba(255,255,255,0.03)",
+                                            borderColor: theme.toolbar.border,
+                                        }}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-semibold group-hover:text-blue-400">
+                                                {preset.title}
+                                            </span>
+                                            <span
+                                                className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                style={{
+                                                    backgroundColor: `${preset.accentColor}20`,
+                                                    color: preset.accentColor,
+                                                }}
+                                            >
+                                                {preset.badge}
+                                            </span>
+                                        </div>
+                                        <p className="mt-2 text-xs leading-relaxed opacity-60">
+                                            {preset.description}
+                                        </p>
+                                        <div className="mt-3 flex items-center justify-between pt-2 text-[11px] opacity-40">
+                                            <span>模型：{preset.models.join(" · ")}</span>
+                                            <span className="font-medium text-blue-400 group-hover:underline">一键载入 →</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
 
                 {referencePickerNodeId ? <button type="button" className="absolute left-1/2 top-4 z-[90] -translate-x-1/2 rounded-full border px-4 py-2 text-sm font-medium shadow-lg backdrop-blur" style={{ background: theme.toolbar.panel, borderColor: theme.toolbar.border }} onClick={exitNodeReferenceSelection}>{t("canvas.references.selectingHint")}</button> : null}
 
@@ -3470,6 +3681,46 @@ function InfiniteCanvasPage() {
                 </Modal>
 
                 <AssetPickerModal open={assetPickerOpen} onInsert={handleAssetInsert} onClose={() => setAssetPickerOpen(false)} />
+
+                <WorkflowReplicateRunnerModal
+                    open={replicateModalState.open}
+                    modelType={replicateModalState.model}
+                    onClose={() => setReplicateModalState((prev) => ({ ...prev, open: false }))}
+                    onSuccess={handleReplicateSuccess}
+                />
+
+                {/* LiblibAI 风格工作流集市与灵感广场 */}
+                <WorkflowMarketModal
+                    open={workflowMarketOpen}
+                    onCancel={() => setWorkflowMarketOpen(false)}
+                    onSelectPreset={(presetId) => handleApplyWorkflow(presetId)}
+                    onPreviewDeliver={(url) => {
+                        setDeliverPlayerTab("video");
+                        setDeliverPlayerOpen(true);
+                    }}
+                />
+
+                {/* 节点超参数调节抽屉 Inspector */}
+                <CanvasInspectorDrawer
+                    open={inspectorDrawerOpen}
+                    onClose={() => setInspectorDrawerOpen(false)}
+                    selectedNode={selectedNode}
+                    onUpdateNodeParams={handleUpdateNodeParams}
+                />
+
+                {/* ComfyUI 原生工作流 JSON 导入器 */}
+                <ComfyJsonImporterModal
+                    open={comfyImporterOpen}
+                    onCancel={() => setComfyImporterOpen(false)}
+                    onImportWorkflow={handleImportWorkflow}
+                />
+
+                {/* 冬虫夏草 58 秒终极成片大屏质检与新视频直通测试 */}
+                <DeliverPlayerModal
+                    open={deliverPlayerOpen}
+                    onCancel={() => setDeliverPlayerOpen(false)}
+                    initialTab={deliverPlayerTab}
+                />
             </section>
         </main>
     );

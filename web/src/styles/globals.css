@@ -607,3 +607,47 @@
     border-radius: 0.6rem;
     font-size: 0.75rem;
 }
+
+/* ==========================================================================
+   LiblibAI & ComfyUI 云端工作流流光特效与执行态动画
+   ========================================================================== */
+@keyframes liblib-glow-border {
+    0% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.45), 0 0 30px rgba(16, 185, 129, 0.2), inset 0 0 12px rgba(16, 185, 129, 0.15);
+        border-color: #10b981;
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.75), 0 0 45px rgba(139, 92, 246, 0.35), inset 0 0 18px rgba(59, 130, 246, 0.25);
+        border-color: #3b82f6;
+    }
+    100% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.45), 0 0 30px rgba(16, 185, 129, 0.2), inset 0 0 12px rgba(16, 185, 129, 0.15);
+        border-color: #10b981;
+    }
+}
+
+.liblib-running-node {
+    animation: liblib-glow-border 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+    border-width: 2.5px !important;
+}
+
+@keyframes liblib-progress-sweep {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.liblib-progress-sweeper {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.45) 50%, rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 100%;
+    animation: liblib-progress-sweep 1.8s infinite linear;
+}
+
+@keyframes liblib-pulse-subtle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.liblib-pulse {
+    animation: liblib-pulse-subtle 2s infinite ease-in-out;
+}
+

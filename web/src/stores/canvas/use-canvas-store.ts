@@ -4,6 +4,7 @@ import { persist, type PersistStorage, type StorageValue } from "zustand/middlew
 import { nanoid } from "nanoid";
 import i18n from "@/i18n";
 import { localForageStorage } from "@/lib/localforage-storage";
+import { createWorkflowPreset, createInitialProjects, type WorkflowPresetId } from "@/lib/canvas/workflow-presets";
 import type { CanvasBackgroundMode } from "@/lib/canvas-theme";
 import type { CanvasAssistantSession, CanvasConnection, CanvasNodeData, ViewportTransform } from "@/types/canvas";
 
@@ -30,16 +31,17 @@ type CanvasStore = {
     hydrated: boolean;
     projects: CanvasProject[];
     deletedProjects: CanvasDeletedProject[];
-    createProject: (title?: string) => string;
+    createProject: (title?: string, presetId?: WorkflowPresetId) => string;
     importProject: (project: Partial<CanvasProject>) => string;
     openProject: (id: string) => CanvasProject | null;
     renameProject: (id: string, title: string) => void;
     deleteProjects: (ids: string[]) => void;
     replaceProjects: (projects: CanvasProject[], deletedProjects?: CanvasDeletedProject[]) => void;
+    resetToIndependentWorkflows: () => void;
     updateProject: (id: string, patch: Partial<Pick<CanvasProject, "nodes" | "connections" | "chatSessions" | "activeChatId" | "backgroundMode" | "showImageInfo" | "viewport">>) => void;
 };
 
-const initialViewport: ViewportTransform = { x: 0, y: 0, k: 1 };
+const initialViewport: ViewportTransform = { x: 120, y: 160, k: 0.85 };
 const CANVAS_STORE_KEY = "infinite-canvas:canvas_store";
 type PersistedCanvasState = Pick<CanvasStore, "projects" | "deletedProjects">;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -72,16 +74,17 @@ export const useCanvasStore = create<CanvasStore>()(
             hydrated: false,
             projects: [],
             deletedProjects: [],
-            createProject: (title = i18n.t("canvas.project.untitled")) => {
+            createProject: (title = "MiniMax-H3 独立视频工作流", presetId: WorkflowPresetId = "h3") => {
                 const now = new Date().toISOString();
                 const id = nanoid();
+                const defaultFlow = createWorkflowPreset(presetId);
                 const project: CanvasProject = {
                     id,
                     title,
                     createdAt: now,
                     updatedAt: now,
-                    nodes: [],
-                    connections: [],
+                    nodes: defaultFlow.nodes,
+                    connections: defaultFlow.connections,
                     chatSessions: [],
                     activeChatId: null,
                     backgroundMode: "lines",
@@ -90,6 +93,10 @@ export const useCanvasStore = create<CanvasStore>()(
                 };
                 set((state) => ({ projects: [project, ...state.projects] }));
                 return id;
+            },
+            resetToIndependentWorkflows: () => {
+                const initial = createInitialProjects();
+                set({ projects: initial });
             },
             importProject: (source) => {
                 const now = new Date().toISOString();
@@ -139,7 +146,27 @@ export const useCanvasStore = create<CanvasStore>()(
                     deletedProjects: state.deletedProjects,
                 }) as StorageValue<CanvasStore>["state"],
             onRehydrateStorage: () => () => {
-                useCanvasStore.setState({ hydrated: true });
+                const currentProjects = useCanvasStore.getState().projects;
+                // 检查是否包含老旧的混杂大乱炖项目，或者缺失 1:1 爆款复刻工作流
+                const hasLegacyMessyFlow = currentProjects.some(
+                    (p) =>
+                        p.title.includes("无限画布") ||
+                        p.title.includes("端到端全链路") ||
+                        (p.nodes.some((n) => n.title.includes("SD 2.5")) && p.nodes.some((n) => n.title.includes("MiniMax-H3"))),
+                );
+                const hasReplicateH3 = currentProjects.some((p) => p.title.includes("1:1 爆款复刻"));
+                const hasUpgradedMuse = currentProjects.some((p) => p.title.includes("30秒 3 镜"));
+                const hasMuseReplicate = currentProjects.some((p) => p.title.includes("Muse · 1:1 爆款复刻"));
+                const hasH3Alive = currentProjects.some((p) => p.id === "proj-h3" && p.title.includes("鲜草是活的吗"));
+                const hasOfficialPlanV2H3 = currentProjects.some(
+                    (p) => p.id === "proj-h3" && p.nodes.some((n) => n.id.includes("planv2") || n.title.includes("PlanV2")),
+                );
+                if (currentProjects.length === 0 || hasLegacyMessyFlow || !hasReplicateH3 || !hasUpgradedMuse || !hasMuseReplicate || !hasH3Alive || !hasOfficialPlanV2H3) {
+                    const initial = createInitialProjects();
+                    useCanvasStore.setState({ projects: initial, hydrated: true });
+                } else {
+                    useCanvasStore.setState({ hydrated: true });
+                }
             },
         },
     ),

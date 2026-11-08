@@ -1,0 +1,801 @@
+{
+  "last_node_id": 12,
+  "last_link_id": 19,
+  "version": "1.1.0",
+  "title": "MiniMax-H3 × ComfyUI 电商深度复刻工作流 · 1:1 人货场精准替换 (鲜草是活的吗？会咬人吗？)",
+  "description": "基于 GitHub 爆款 ComfyUI 导演级 RV2V 架构：以原片为动作/机位底模，通过 MiniMaxH3_ECommerce_PromptReplacer 将人物替换为指定女掌柜、产品替换为正宗西藏那曲野生金黄鲜草实物，声音彻底替换为广播级母带，全渠道一键发布。",
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "pos": [
+        -760,
+        -320
+      ],
+      "size": [
+        340,
+        240
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1,
+            2,
+            7
+          ]
+        },
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo (指定爆款原片动作与运镜底模)",
+        "source_path": "out/replicate_alive_cordyceps/orig/orig_master.mp4",
+        "duration": 58.003,
+        "resolution": "1080x1920",
+        "fps": 24.0,
+        "shots_total": 8
+      },
+      "widgets_values": [
+        "out/replicate_alive_cordyceps/orig/orig_master.mp4",
+        "video/mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VideoSceneSplitter",
+      "pos": [
+        -380,
+        -420
+      ],
+      "size": [
+        340,
+        260
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SHOT_CLIPS",
+          "type": "SHOT_LIST",
+          "links": [
+            4,
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VideoSceneSplitter (8 镜毫秒级音画解耦)",
+        "split_method": "Hard Cut & Keyframe Detection",
+        "shots": [
+          {
+            "id": "shot01",
+            "time": "00.00-05.00s",
+            "role": "口播发问"
+          },
+          {
+            "id": "shot02",
+            "time": "05.00-11.00s",
+            "role": "破除误区"
+          },
+          {
+            "id": "shot03",
+            "time": "11.00-19.00s",
+            "role": "雪山实景"
+          },
+          {
+            "id": "shot04",
+            "time": "19.00-28.00s",
+            "role": "清泉冲洗"
+          },
+          {
+            "id": "shot05",
+            "time": "28.00-37.00s",
+            "role": "开玩笑咬我"
+          },
+          {
+            "id": "shot06",
+            "time": "37.00-46.00s",
+            "role": "整根吃科普"
+          },
+          {
+            "id": "shot07",
+            "time": "46.00-52.00s",
+            "role": "超细粉冲水"
+          },
+          {
+            "id": "shot08",
+            "time": "52.00-58.00s",
+            "role": "关注掌柜"
+          }
+        ]
+      },
+      "widgets_values": [
+        8,
+        "adaptive_threshold",
+        0.35
+      ]
+    },
+    {
+      "id": 3,
+      "type": "WhisperAudioTranscribe",
+      "pos": [
+        -380,
+        -120
+      ],
+      "size": [
+        340,
+        240
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "TRANSCRIPTS",
+          "type": "TEXT_LIST",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "WhisperAudioTranscribe (毫秒级分句台词转写)",
+        "model": "whisper-large-v3",
+        "language": "zh",
+        "timestamp_level": "sentence"
+      },
+      "widgets_values": [
+        "large-v3",
+        "zh",
+        true
+      ]
+    },
+    {
+      "id": 4,
+      "type": "LoadImage_CharacterRef",
+      "pos": [
+        -760,
+        -40
+      ],
+      "size": [
+        340,
+        240
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CHARACTER_REF",
+          "type": "IMAGE",
+          "links": [
+            8,
+            9,
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage (我们的人物B 形象锁定)",
+        "role_name": "知性端庄女掌柜",
+        "face_path": "out/ad30s/ref/person_face.png",
+        "det_score": 0.869,
+        "gray_pad_px": 190
+      },
+      "widgets_values": [
+        "out/ad30s/ref/person_face.png",
+        "image/png"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoadImage_ProductRef",
+      "pos": [
+        -760,
+        240
+      ],
+      "size": [
+        340,
+        240
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "PRODUCT_REF",
+          "type": "IMAGE",
+          "links": [
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage (电商核心产品锁定 · 西藏那曲金黄鲜草)",
+        "product_name": "正宗西藏那曲野生金黄新鲜冬虫夏草 (白瓷漏斗沥水碗实物)",
+        "product_path": "out/replicate_alive_cordyceps/ref/product_fresh_cordyceps.jpg",
+        "strict_preservation": true,
+        "forbid_items": "严禁任何木盒、木托盘、假干草丝"
+      },
+      "widgets_values": [
+        "out/replicate_alive_cordyceps/ref/product_fresh_cordyceps.jpg",
+        "image/jpeg"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "EBUR128_AudioMastering",
+      "pos": [
+        -380,
+        160
+      ],
+      "size": [
+        340,
+        240
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "TRANSCRIPTS",
+          "type": "TEXT_LIST",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASTER_AUDIO",
+          "type": "AUDIO",
+          "links": [
+            10,
+            11,
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EBUR128_AudioMastering (标普广播级母带压制)",
+        "target_lufs": -16.0,
+        "true_peak_dbfs": -1.5,
+        "breath_pause_s": 0.35,
+        "voice_role": "知性成熟女性普通话",
+        "master_file": "master_voice_person_b_58s.wav"
+      },
+      "widgets_values": [
+        -16.0,
+        -1.5,
+        44100,
+        16
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3_ECommerce_PromptReplacer",
+      "pos": [
+        20,
+        -320
+      ],
+      "size": [
+        400,
+        480
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "SHOT_CLIPS",
+          "type": "SHOT_LIST",
+          "link": 4
+        },
+        {
+          "name": "CHARACTER_REF",
+          "type": "IMAGE",
+          "link": 16
+        },
+        {
+          "name": "PRODUCT_REF",
+          "type": "IMAGE",
+          "link": 17
+        },
+        {
+          "name": "MASTER_AUDIO",
+          "type": "AUDIO",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "DIRECTOR_PROMPTS",
+          "type": "PROMPTS_DICT",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3_ECommerce_PromptReplacer (电商深度提示词替换中枢)",
+        "character_rule": "Replace the person in <Video 1> with the elegant female shopkeeper in <Picture 1>. Retain natural head movements, cheerful facial micro-expressions, and lipsync with <Audio 1>.",
+        "product_rule": "Replace generic bowls/items in <Video 1> with the authentic product in <Picture 2>: pure white ceramic funnel-shaped colander bowl neatly packed with fresh golden Tibetan Nagqu wild cordyceps (clear circular ridges, 4 pairs of abdominal legs, slim dark brown stroma). Keep spring water washing and tasting comedy physics identical.",
+        "positive_embeddings": "Authentic e-commerce broadcast live stream, commercial studio lighting, 8k uhd, sharp focus on fresh golden cordyceps texture, natural skin subsurface scattering, professional female host",
+        "negative_embeddings": "plastic skin, distorted hands, wooden box, enoki mushroom, blurry product, jitter, asynchronous lip movement",
+        "shot_matrix": [
+          {
+            "shot": 1,
+            "action": "口播发问",
+            "prompt": "Replace person in <Video 1> with woman in <Picture 1>. Replace item with white bowl of fresh golden cordyceps in <Picture 2>. She delivers opening comedic hook synced with <Audio 1>."
+          },
+          {
+            "shot": 2,
+            "action": "破除误区",
+            "prompt": "The woman in <Picture 1> smiles warmly and gestures with hands, showing golden fresh cordyceps in <Picture 2> towards camera to explain cordyceps never bite."
+          },
+          {
+            "shot": 3,
+            "action": "雪山实景",
+            "prompt": "Preserve alpine snowmountain environment of <Video 1>, extreme close-up of genuine fresh cordyceps emerging from damp alpine frozen soil, golden body with circular ridges."
+          },
+          {
+            "shot": 4,
+            "action": "清泉冲洗",
+            "prompt": "Hands gently brushing fresh cordyceps with soft brush under crystal mountain spring water, natural water splashes over golden caterpillar surface, perfectly matching physical flow of <Video 1>."
+          },
+          {
+            "shot": 5,
+            "action": "尝吃开玩笑",
+            "prompt": "The woman in <Picture 1> brings single fresh cordyceps from <Picture 2> to mouth, pretending to be bitten, laughs heartily, describing crisp mushroom-like sweet taste."
+          },
+          {
+            "shot": 6,
+            "action": "整根吃科普",
+            "prompt": "Close-up hands presenting whole cordyceps, pointing from dark-brown stroma head to golden caterpillar body with 4 pairs of abdominal legs, explaining balanced nutritional value."
+          },
+          {
+            "shot": 7,
+            "action": "超细粉冲水",
+            "prompt": "Fresh cordyceps ground into ultra-fine golden powder, spooned into warm water, golden swirls diffusing in glass, e-commerce 4K macro lens lighting."
+          },
+          {
+            "shot": 8,
+            "action": "关注掌柜促单",
+            "prompt": "Female shopkeeper in <Picture 1> holds white bowl in <Picture 2>, smiling sincerely and giving friendly follow-and-shop gesture towards camera, professional e-commerce CTA hook."
+          }
+        ]
+      },
+      "widgets_values": [
+        "MiniMax-H3 Director",
+        "ECommerce_1to1_Replace",
+        "Keep_Original_Motion",
+        true
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMax_H3_MultiModalReplicate",
+      "pos": [
+        460,
+        -320
+      ],
+      "size": [
+        360,
+        360
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "DIRECTOR_PROMPTS",
+          "type": "PROMPTS_DICT",
+          "link": 19
+        },
+        {
+          "name": "CHARACTER_REF",
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "name": "MASTER_AUDIO",
+          "type": "AUDIO",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "H3_SEGMENTS",
+          "type": "VIDEO_LIST",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMax_H3_MultiModal (音图联合复刻引擎)",
+        "model": "MiniMax-H3",
+        "mode": "reference",
+        "resolution": "1080P",
+        "ratio": "9:16",
+        "points_per_sec": 19,
+        "multi_modal_inputs": "CharacterFace + ProductRef + VoiceWav + ECommercePrompt"
+      },
+      "widgets_values": [
+        "MiniMax-H3",
+        "reference",
+        "1080P",
+        "9:16",
+        58.0
+      ]
+    },
+    {
+      "id": 9,
+      "type": "InsightFace_FaceSwap",
+      "pos": [
+        860,
+        -200
+      ],
+      "size": [
+        360,
+        320
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "VIDEO_IN",
+          "type": "VIDEO",
+          "link": 2
+        },
+        {
+          "name": "CHARACTER_REF",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SWAPPED_VIDEO",
+          "type": "VIDEO",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "InsightFace_FaceSwap (两遍平滑逐帧替换)",
+        "detector": "SCRFD-Buffalo_L",
+        "swapper_model": "inswapper_128.onnx",
+        "smooth_window": 5,
+        "hardware": "CoreMLExecutionProvider / MPS",
+        "detect_hits": "931/1392 (有人脸帧 100% 替换)",
+        "cosine_similarity": 0.7941
+      },
+      "widgets_values": [
+        "inswapper_128.onnx",
+        5,
+        0.08,
+        1.35
+      ]
+    },
+    {
+      "id": 10,
+      "type": "SubtitleAndHeaderCompositor",
+      "pos": [
+        1260,
+        -200
+      ],
+      "size": [
+        360,
+        280
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "VIDEO_IN",
+          "type": "VIDEO",
+          "link": 13
+        },
+        {
+          "name": "AUDIO_IN",
+          "type": "AUDIO",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FINAL_VIDEO",
+          "type": "VIDEO",
+          "links": [
+            14,
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SubtitleAndHeaderCompositor (高清电影级压制)",
+        "font": "STHeiti Medium / PingFang SC",
+        "style": "46pt Pure White with 4px Heavy Black Stroke",
+        "margin_v": 1540,
+        "header_title": "西藏那曲冬虫夏草 · 鲜草科普",
+        "header_sub": "海拔 4500 米高原雪山头茬原生态采挖",
+        "crf": 18,
+        "preset": "medium"
+      },
+      "widgets_values": [
+        "STHeiti Medium",
+        46,
+        "00FFFFFF",
+        "00000000",
+        4,
+        1540
+      ]
+    },
+    {
+      "id": 11,
+      "type": "VideoPlayer_Deliver",
+      "pos": [
+        1660,
+        -280
+      ],
+      "size": [
+        440,
+        520
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "FINAL_VIDEO",
+          "type": "VIDEO",
+          "link": 14
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "VideoPlayer_Deliver (最终 1:1 满血成片)",
+        "title": "冬虫夏草_鲜草是活的吗_1to1复刻_人物B_H3原生发声.mp4",
+        "duration": 58.0,
+        "resolution": "1080x1920",
+        "fps": 24,
+        "size_mb": 52.2,
+        "bitrate": "7549 kb/s",
+        "status": "ready"
+      },
+      "widgets_values": [
+        "/api/media/out%2Freplicate_alive_cordyceps%2Fdeliver/%E5%86%AC%E8%99%AB%E5%A4%8F%E8%8D%89_%E9%B2%9C%E8%8D%89%E6%98%AF%E6%B4%BB%E7%9A%84%E5%90%97_1to1%E5%A4%8D%E5%88%BB_%E4%BA%BA%E7%89%A9B_H3%E5%8E%9F%E7%94%9F%E5%8F%91%E5%A3%B0.mp4"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MultiPlatformPublisher",
+      "pos": [
+        1660,
+        280
+      ],
+      "size": [
+        440,
+        240
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "FINAL_VIDEO",
+          "type": "VIDEO",
+          "link": 15
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MultiPlatformPublisher (全渠道矩阵发布)",
+        "platforms": [
+          "Douyin",
+          "Channels",
+          "Kuaishou"
+        ],
+        "default_title": "鲜草是活的吗？会咬人吗？",
+        "topics": [
+          "#冬虫夏草",
+          "#新鲜虫草",
+          "#那曲鲜草",
+          "#滋补养生"
+        ]
+      },
+      "widgets_values": [
+        [
+          "Douyin",
+          "Channels",
+          "Kuaishou"
+        ],
+        "鲜草是活的吗？会咬人吗？"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      1,
+      0,
+      9,
+      0,
+      "VIDEO"
+    ],
+    [
+      3,
+      1,
+      1,
+      3,
+      0,
+      "AUDIO"
+    ],
+    [
+      4,
+      2,
+      0,
+      7,
+      0,
+      "SHOT_LIST"
+    ],
+    [
+      5,
+      3,
+      0,
+      6,
+      0,
+      "TEXT_LIST"
+    ],
+    [
+      6,
+      2,
+      0,
+      10,
+      0,
+      "SHOT_LIST"
+    ],
+    [
+      7,
+      1,
+      0,
+      10,
+      0,
+      "VIDEO"
+    ],
+    [
+      8,
+      4,
+      0,
+      8,
+      1,
+      "IMAGE"
+    ],
+    [
+      9,
+      4,
+      0,
+      9,
+      1,
+      "IMAGE"
+    ],
+    [
+      10,
+      6,
+      0,
+      8,
+      2,
+      "AUDIO"
+    ],
+    [
+      11,
+      6,
+      0,
+      10,
+      1,
+      "AUDIO"
+    ],
+    [
+      12,
+      8,
+      0,
+      10,
+      0,
+      "VIDEO_LIST"
+    ],
+    [
+      13,
+      9,
+      0,
+      10,
+      0,
+      "VIDEO"
+    ],
+    [
+      14,
+      10,
+      0,
+      11,
+      0,
+      "VIDEO"
+    ],
+    [
+      15,
+      10,
+      0,
+      12,
+      0,
+      "VIDEO"
+    ],
+    [
+      16,
+      4,
+      0,
+      7,
+      1,
+      "IMAGE"
+    ],
+    [
+      17,
+      5,
+      0,
+      7,
+      2,
+      "IMAGE"
+    ],
+    [
+      18,
+      6,
+      0,
+      7,
+      3,
+      "AUDIO"
+    ],
+    [
+      19,
+      7,
+      0,
+      8,
+      0,
+      "PROMPTS_DICT"
+    ]
+  ]
+}
